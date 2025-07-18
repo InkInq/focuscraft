@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Focuscraft - Daily Rituals & Mystical Habits</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        
+        .animate-bounce {
+            animation: bounce 1s infinite;
+        }
+        
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
+            40%, 43% { transform: translate3d(0,-30px,0); }
+            70% { transform: translate3d(0,-15px,0); }
+            90% { transform: translate3d(0,-4px,0); }
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .drop-shadow-lg {
+            filter: drop-shadow(0 10px 8px rgb(0 0 0 / 0.04)) drop-shadow(0 4px 3px rgb(0 0 0 / 0.1));
+        }
+        
+        .shadow-inner {
+            box-shadow: inset 0 2px 4px 0 rgb(0 0 0 / 0.05);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-amber-900 via-amber-800 to-stone-900 p-4">
+    <div id="app" class="max-w-6xl mx-auto">
+        <!-- Book Cover Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-amber-200 mb-2">Focuscraft</h1>
+            <p class="text-amber-400 italic">Daily Rituals & Mystical Habits</p>
+        </div>
+
+        <div id="xpBar"></div>
+        <div id="tabNavigation"></div>
+        <div id="content"></div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Enhanced state with new features
+        const loadState = () => {
+            const saved = localStorage.getItem('focuscraft-state');
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                // Convert date strings back to Date objects
+                if (parsed.journalEntries && Array.isArray(parsed.journalEntries)) {
+                    parsed.journalEntries = parsed.journalEntries.map(entry => ({
+                        ...entry,
+                        timestamp: new Date(entry.timestamp)
+                    }));
+                }
+                // Ensure new fields exist
+                return {
+                    ...parsed,
+                    theme: parsed.theme || 'amber',
+                    goals: parsed.goals || { xpTarget: 0, streakTarget: 0, weeklyTarget: 0 },
+                    moodEntries: parsed.moodEntries || [],
+                    reminders: parsed.reminders || { enabled: false, time: '09:00' },
+                    wisdom: parsed.wisdom || { lastShown: null, quotes: [] },
+                    analytics: parsed.analytics || { dailyStats: [], weeklyStats: [], monthlyStats: [] },
+                    darkMode: parsed.darkMode || false
+                };
+            }
+            return {
+                activeTab: 'spellbook',
+                spells: [
+                    { 
+                        id: 1, 
+                        name: "Ward of Clean Teeth", 
+                        element: "water", 
+                        completed: false, 
+                        editable: false,
+                        showDescription: false,
+                        streak: 0,
+                        description: "A cleansing ritual performed with blessed waters and sacred herbs. Through the ancient practice of oral purification, banish the dark spirits of decay and cultivate the radiant smile of divine health."
+                    },
+                    { 
+                        id: 2, 
+                        name: "Chrono-Sigil of Rising", 
+                        element: "air", 
+                        completed: false, 
+                        editable: false,
+                        showDescription: false,
+                        streak: 0,
+                        description: "An awakening invocation performed at dawn's first light. Rise with the ascending energies of the eastern winds, aligning your mortal vessel with the cosmic rhythm of time and renewal."
+                    },
+                    { 
+                        id: 3, 
+                        name: "Ritual of Nourishment", 
+                        element: "earth", 
+                        completed: false, 
+                        editable: false,
+                        showDescription: false,
+                        streak: 0,
+                        description: "A sacred communion with the earth's bounty. Mindfully consume the gifts of soil and sun, transmuting physical sustenance into spiritual vitality through grateful intention."
+                    },
+                    { 
+                        id: 4, 
+                        name: "Flame of Movement", 
+                        element: "fire", 
+                        completed: false, 
+                        editable: false,
+                        showDescription: false,
+                        streak: 0,
+                        description: "An kinetic incantation to awaken the inner fire. Through purposeful motion and sacred movement, kindle the flames of vitality and burn away the sedentary shadows that bind the soul."
+                    },
+                    { 
+                        id: 5, 
+                        name: "Spirit's Reflection", 
+                        element: "spirit", 
+                        completed: false, 
+                        editable: false,
+                        showDescription: false,
+                        streak: 0,
+                        description: "A contemplative meditation upon the eternal self. In sacred silence, peer beyond the veil of mundane existence and commune with the luminous essence that transcends mortal form."
+                    }
+                ],
+                journalUnlocked: false,
+                currentJournalEntry: "",
+                journalEntries: [],
+                showJournal: false,
+                currentXP: 0,
+                currentLevel: 1,
+                showXPGain: false,
+                hasEarnedXPToday: false,
+                showLevelUp: false,
+                streakResetNotification: null,
+                showWelcome: true,
+                theme: 'amber',
+                goals: { xpTarget: 0, streakTarget: 0, weeklyTarget: 0 },
+                moodEntries: [],
+                reminders: { enabled: false, time: '09:00' },
+                wisdom: { lastShown: null, quotes: [] },
+                analytics: { dailyStats: [], weeklyStats: [], monthlyStats: [] },
+                darkMode: false
+            };
+        };
+
+        // App state
+        const state = loadState();
+
+        // Theme definitions
+        const themes = {
+            amber: {
+                name: "Amber Mystic",
+                primary: "amber",
+                secondary: "yellow",
+                accent: "stone",
+                bg: "from-amber-900 via-amber-800 to-stone-900",
+                card: "from-amber-100 via-yellow-50 to-amber-100",
+                border: "border-amber-800",
+                text: "text-amber-900"
+            },
+            water: {
+                name: "Azure Waters",
+                primary: "blue",
+                secondary: "cyan",
+                accent: "indigo",
+                bg: "from-blue-900 via-indigo-800 to-slate-900",
+                card: "from-blue-100 via-cyan-50 to-blue-100",
+                border: "border-blue-800",
+                text: "text-blue-900"
+            },
+            fire: {
+                name: "Crimson Flames",
+                primary: "red",
+                secondary: "orange",
+                accent: "amber",
+                bg: "from-red-900 via-orange-800 to-amber-900",
+                card: "from-red-100 via-orange-50 to-red-100",
+                border: "border-red-800",
+                text: "text-red-900"
+            },
+            earth: {
+                name: "Emerald Grove",
+                primary: "green",
+                secondary: "emerald",
+                accent: "teal",
+                bg: "from-green-900 via-emerald-800 to-teal-900",
+                card: "from-green-100 via-emerald-50 to-green-100",
+                border: "border-green-800",
+                text: "text-green-900"
+            },
+            air: {
+                name: "Golden Winds",
+                primary: "yellow",
+                secondary: "amber",
+                accent: "orange",
+                bg: "from-yellow-900 via-amber-800 to-orange-900",
+                card: "from-yellow-100 via-amber-50 to-yellow-100",
+                border: "border-yellow-800",
+                text: "text-yellow-900"
+            },
+            spirit: {
+                name: "Violet Veil",
+                primary: "purple",
+                secondary: "violet",
+                accent: "indigo",
+                bg: "from-purple-900 via-violet-800 to-indigo-900",
+                card: "from-purple-100 via-violet-50 to-purple-100",
+                border: "border-purple-800",
+                text: "text-purple-900"
+            }
+        };
+
+        const elements = {
+            water: { color: "text-blue-400", glow: "text-blue-300", symbol: "▽" },
+            air: { color: "text-yellow-400", glow: "text-yellow-300", symbol: "△", hasLine: true },
+            earth: { color: "text-green-400", glow: "text-green-300", symbol: "▽", hasLine: true },
+            fire: { color: "text-red-400", glow: "text-red-300", symbol: "△" },
+            spirit: { color: "text-purple-400", glow: "text-purple-300", symbol: "◯" }
+        };
+
+        // XP System Constants
+        const BASE_XP_PER_COMPLETION = 120;
+        const STREAK_BONUS_PER_TASK = 15;
+        const PENALTY_PER_MISSED_TASK = 25;
+
+        // Utility functions
+        const getXPForLevel = (level) => level * 500;
+        const getXPNeededForNextLevel = () => getXPForLevel(state.currentLevel);
+        const getXPProgress = () => {
+            if (state.currentXP < 0) return state.currentXP;
+            return state.currentXP % getXPForLevel(state.currentLevel);
+        };
+        const getXPProgressPercent = () => {
+            if (state.currentXP < 0) {
+                return Math.max(-100, (state.currentXP / 500) * 100);
+            }
+            return (getXPProgress() / getXPForLevel(state.currentLevel)) * 100;
+        };
+
+        const getPrestigeTitle = (level) => {
+            if (level >= 101) return { title: "Mystic Lord", color: "text-purple-400", glow: "text-purple-300" };
+            if (level >= 76) return { title: "Archmagus", color: "text-indigo-400", glow: "text-indigo-300" };
+            if (level >= 51) return { title: "Grand Wizard", color: "text-blue-400", glow: "text-blue-300" };
+            if (level >= 36) return { title: "Archmage", color: "text-green-400", glow: "text-green-300" };
+            if (level >= 21) return { title: "Mage", color: "text-yellow-400", glow: "text-yellow-300" };
+            if (level >= 11) return { title: "Adept", color: "text-orange-400", glow: "text-orange-300" };
+            if (level >= 6) return { title: "Initiate", color: "text-red-400", glow: "text-red-300" };
+            return { title: "Apprentice", color: "text-gray-400", glow: "text-gray-300" };
+        };
+
+        const calculateTotalXP = () => {
+            const completedSpells = state.spells.filter(spell => spell.completed);
+            const missedSpells = state.spells.filter(spell => !spell.completed);
+            
+            const baseXP = (completedSpells.length / state.spells.length) * BASE_XP_PER_COMPLETION;
+            const streakBonus = completedSpells.reduce((total, spell) => total + (spell.streak * STREAK_BONUS_PER_TASK), 0);
+            const penalty = missedSpells.length * PENALTY_PER_MISSED_TASK;
+            
+            return Math.round(baseXP + streakBonus - penalty);
+        };
+
+        const getXPBreakdown = () => {
+            const completedSpells = state.spells.filter(spell => spell.completed);
+            const missedSpells = state.spells.filter(spell => !spell.completed);
+            const baseXP = Math.round((completedSpells.length / state.spells.length) * BASE_XP_PER_COMPLETION);
+            const streakBonus = completedSpells.reduce((total, spell) => total + (spell.streak * STREAK_BONUS_PER_TASK), 0);
+            const penalty = missedSpells.length * PENALTY_PER_MISSED_TASK;
+            
+            return { baseXP, streakBonus, penalty, completedCount: completedSpells.length, missedCount: missedSpells.length };
+        };
+
+        // Event handlers
+        const toggleSpell = (id) => {
+            state.spells = state.spells.map(spell => 
+                spell.id === id ? { ...spell, completed: !spell.completed } : spell
+            );
+            saveState();
+            updateUI();
+        };
+
+        const editSpell = (id, newName, newDescription) => {
+            const spell = state.spells.find(s => s.id === id);
+            if (spell && spell.streak > 0) {
+                state.streakResetNotification = spell.name;
+                setTimeout(() => {
+                    state.streakResetNotification = null;
+                    updateUI();
+                }, 3000);
+            }
+            
+            state.spells = state.spells.map(spell => 
+                spell.id === id ? { 
+                    ...spell, 
+                    name: newName, 
+                    description: newDescription || spell.description,
+                    editable: false, 
+                    streak: 0 
+                } : spell
+            );
+            saveState();
+            updateUI();
+        };
+
+        const startEdit = (id) => {
+            state.spells = state.spells.map(spell => 
+                spell.id === id ? { ...spell, editable: true, showDescription: true } : { ...spell, editable: false }
+            );
+            saveState();
+            updateUI();
+        };
+
+        const toggleDescription = (id) => {
+            state.spells = state.spells.map(spell => 
+                spell.id === id ? { ...spell, showDescription: !spell.showDescription } : spell
+            );
+            saveState();
+            updateUI();
+        };
+
+        const saveJournalEntry = () => {
+            console.log('saveJournalEntry called, current entry:', state.currentJournalEntry);
+            if (state.currentJournalEntry.trim() === "") {
+                console.log('Entry is empty, returning');
+                return;
+            }
+            
+            const completedSpells = state.spells.filter(spell => spell.completed);
+            const totalXPChange = calculateTotalXP();
+            const breakdown = getXPBreakdown();
+            
+            const newEntry = {
+                id: Date.now(),
+                content: state.currentJournalEntry,
+                timestamp: new Date(),
+                completedSpells: completedSpells.map(spell => spell.name),
+                totalXPGained: totalXPChange,
+                xpBreakdown: breakdown,
+                streaks: state.spells.map(spell => ({ 
+                    name: spell.name, 
+                    streak: spell.completed ? spell.streak + 1 : spell.streak 
+                }))
+            };
+            
+            const newXP = state.currentXP + totalXPChange;
+            const oldLevel = state.currentLevel;
+            const newLevel = Math.max(1, Math.floor(Math.max(0, newXP) / 500) + 1);
+            
+            state.currentXP = newXP;
+            state.hasEarnedXPToday = true;
+            state.showXPGain = true;
+            
+            if (newLevel > oldLevel) {
+                state.currentLevel = newLevel;
+                state.showLevelUp = true;
+                setTimeout(() => {
+                    state.showLevelUp = false;
+                    updateUI();
+                }, 4004);
+            } else if (newLevel < oldLevel) {
+                state.currentLevel = newLevel;
+            }
+            
+            setTimeout(() => {
+                state.showXPGain = false;
+                updateUI();
+            }, 3000);
+            
+            state.journalEntries = [newEntry, ...state.journalEntries];
+            state.currentJournalEntry = "";
+            state.showJournal = false;
+            
+            state.spells = state.spells.map(spell => ({ 
+                ...spell, 
+                completed: false, 
+                showDescription: false,
+                streak: spell.completed ? spell.streak + 1 : Math.max(0, spell.streak - 1)
+            }));
+            state.hasEarnedXPToday = false;
+            state.journalUnlocked = false;
+            
+            saveState();
+            updateUI();
+        };
+
+        const formatDate = (date) => {
+            return date.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        };
+
+        const formatTime = (date) => {
+            return date.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+        };
+
+        // Utility functions for new features
+        const getCurrentTheme = () => themes[state.theme] || themes.amber;
+        
+        const getDailyWisdom = () => {
+            const quotes = [
+                "The greatest magic is the transformation of habits into rituals.",
+                "Every completed task is a spell cast upon your future self.",
+                "Consistency is the wand that shapes destiny.",
+                "In the realm of habits, persistence is the most powerful element.",
+                "Your daily rituals are the foundation of your magical legacy.",
+                "The smallest ritual, performed daily, becomes the greatest spell.",
+                "Each streak is a thread in the tapestry of your transformation.",
+                "The path to mastery is paved with daily practice.",
+                "Your rituals today become your reality tomorrow.",
+                "In the garden of habits, patience is the most precious fertilizer."
+            ];
+            return quotes[Math.floor(Math.random() * quotes.length)];
+        };
+
+        const calculateAnalytics = () => {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const weekStart = new Date(today.getTime() - (today.getDay() * 24 * 60 * 60 * 1000));
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+            const dailyStats = state.journalEntries.filter(entry => 
+                new Date(entry.timestamp) >= today
+            );
+
+            const weeklyStats = state.journalEntries.filter(entry => 
+                new Date(entry.timestamp) >= weekStart
+            );
+
+            const monthlyStats = state.journalEntries.filter(entry => 
+                new Date(entry.timestamp) >= monthStart
+            );
+
+            return { dailyStats, weeklyStats, monthlyStats };
+        };
+
+        const exportData = () => {
+            const data = {
+                user: {
+                    level: state.currentLevel,
+                    xp: state.currentXP,
+                    totalEntries: state.journalEntries.length
+                },
+                entries: state.journalEntries.map(entry => ({
+                    date: formatDate(entry.timestamp),
+                    time: formatTime(entry.timestamp),
+                    xpGained: entry.totalXPGained,
+                    completedRituals: entry.completedSpells.length,
+                    reflection: entry.content
+                })),
+                analytics: calculateAnalytics()
+            };
+
+            const csv = [
+                ['Date', 'Time', 'XP Gained', 'Rituals Completed', 'Reflection'],
+                ...data.entries.map(entry => [
+                    entry.date,
+                    entry.time,
+                    entry.xpGained,
+                    entry.completedRituals,
+                    `"${entry.reflection.replace(/"/g, '""')}"`
+                ])
+            ].map(row => row.join(',')).join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `focuscraft-progress-${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        const addMoodEntry = (mood, notes = '') => {
+            const entry = {
+                id: Date.now(),
+                timestamp: new Date(),
+                mood: mood,
+                notes: notes,
+                completedRituals: state.spells.filter(spell => spell.completed).length
+            };
+            state.moodEntries.push(entry);
+            saveState();
+        };
+
+        // UI Components
+        const renderXPBar = () => {
+            const theme = getCurrentTheme();
+            const prestigeTitle = getPrestigeTitle(state.currentLevel);
+            const potentialXP = calculateTotalXP();
+            const breakdown = getXPBreakdown();
+            const completedCount = state.spells.filter(spell => spell.completed).length;
+            
+            return `
+                <div class="bg-amber-800 rounded-lg p-4 shadow-lg mb-6 relative">
+                    ${state.showLevelUp ? '<div class="absolute inset-0 bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 rounded-lg opacity-75 animate-pulse"></div>' : ''}
+                    <div class="relative z-10">
+                        <div class="text-center mb-3">
+                            <div class="inline-block px-4 py-2 rounded-full bg-amber-900 ${prestigeTitle.color} font-bold text-lg shadow-lg">
+                                ${prestigeTitle.title}
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-amber-600 text-white px-3 py-1 rounded-full font-bold text-sm transition-all ${state.showLevelUp ? 'animate-bounce bg-yellow-500' : ''}">
+                                    Level ${state.currentLevel}
+                                </div>
+                                <span class="font-medium ${state.currentXP < 0 ? 'text-red-300' : 'text-amber-200'}">
+                                    ${state.currentXP < 0 ? state.currentXP : getXPProgress()} / ${getXPForLevel(state.currentLevel)} XP
+                                </span>
+                            </div>
+                            <div class="flex space-x-2">
+                                ${state.showXPGain ? `<div class="animate-bounce font-bold ${potentialXP >= 0 ? 'text-green-300' : 'text-red-300'}">${potentialXP >= 0 ? '+' : ''}${potentialXP} XP!</div>` : ''}
+                                ${state.showLevelUp ? '<div class="animate-pulse text-yellow-300 font-bold text-lg">🎉 LEVEL UP! 🎉</div>' : ''}
+                            </div>
+                        </div>
+                        
+                        ${completedCount >= 3 && !state.hasEarnedXPToday ? `
+                            <div class="text-center mb-2 space-y-1">
+                                <div class="text-amber-300 text-sm font-medium">
+                                    Ready to earn: <span class="${potentialXP >= 0 ? 'text-green-300' : 'text-red-300'}">${potentialXP >= 0 ? '+' : ''}${potentialXP} XP</span>
+                                </div>
+                                <div class="text-amber-400 text-xs">
+                                    ${breakdown.baseXP > 0 ? `<span>Base: +${breakdown.baseXP}</span>` : ''}
+                                    ${breakdown.streakBonus > 0 ? `<span> | Streaks: +${breakdown.streakBonus}</span>` : ''}
+                                    ${breakdown.penalty > 0 ? `<span> | Missed: <span class="text-red-300">-${breakdown.penalty}</span></span>` : ''}
+                                </div>
+                                ${potentialXP < 0 && state.currentXP + potentialXP < state.currentXP ? '<div class="text-red-300 text-xs font-bold">⚠️ This will put you deeper into XP debt!</div>' : ''}
+                            </div>
+                        ` : ''}
+                        
+                        ${state.currentXP < 0 ? `
+                            <div class="text-center mb-2">
+                                <div class="bg-red-900 border border-red-600 text-red-300 px-3 py-2 rounded-lg text-sm">
+                                    💀 XP DEBT: You must earn positive XP to advance!
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="w-full bg-amber-900 rounded-full h-3 overflow-hidden relative">
+                            ${state.currentXP < 0 ? `
+                                <div class="relative w-full h-full">
+                                    <div class="absolute inset-0 bg-red-900"></div>
+                                    <div class="absolute right-0 h-full bg-gradient-to-l from-red-500 to-red-400 transition-all duration-1000" style="width: ${Math.min(100, Math.abs(getXPProgressPercent()))}%">
+                                        <div class="w-full h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse"></div>
+                                    </div>
+                                </div>
+                            ` : `
+                                <div class="h-3 rounded-full transition-all duration-1000 ease-out shadow-inner ${state.showLevelUp ? 'bg-gradient-to-r from-yellow-400 to-yellow-300 animate-pulse' : 'bg-gradient-to-r from-amber-400 to-amber-300'}" style="width: ${getXPProgressPercent()}%">
+                                    <div class="w-full h-full bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-pulse"></div>
+                                </div>
+                            `}
+                        </div>
+                        <div class="text-center mt-2">
+                            <span class="text-xs ${state.currentXP < 0 ? 'text-red-400' : 'text-amber-400'}">
+                                ${state.currentXP < 0 
+                                    ? `${Math.abs(state.currentXP)} XP debt - earn ${Math.abs(state.currentXP)} XP to reach Level 1`
+                                    : `${getXPForLevel(state.currentLevel) - getXPProgress()} XP to next level`
+                                }
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderTabNavigation = () => {
+            const theme = getCurrentTheme();
+            return `
+                <div class="flex justify-center mb-8">
+                    <div class="bg-${theme.primary}-800 rounded-lg p-1 shadow-lg flex">
+                        <button onclick="setActiveTab('spellbook')" class="flex items-center space-x-2 px-6 py-3 rounded-md transition-all ${state.activeTab === 'spellbook' ? `bg-${theme.primary}-200 text-${theme.primary}-900 shadow-md` : `text-${theme.primary}-200 hover:bg-${theme.primary}-700`}">
+                            <i data-lucide="book-open" class="w-4 h-4"></i>
+                            <span class="font-medium">Spellbook</span>
+                        </button>
+                        <button onclick="setActiveTab('log')" class="flex items-center space-x-2 px-6 py-3 rounded-md transition-all ${state.activeTab === 'log' ? `bg-${theme.primary}-200 text-${theme.primary}-900 shadow-md` : `text-${theme.primary}-200 hover:bg-${theme.primary}-700`}">
+                            <i data-lucide="scroll-text" class="w-4 h-4"></i>
+                            <span class="font-medium">Sacred Log</span>
+                            ${state.journalEntries.length > 0 ? `<span class="bg-${theme.primary}-600 text-white text-xs rounded-full px-2 py-1 ml-1">${state.journalEntries.length}</span>` : ''}
+                        </button>
+                        <button onclick="setActiveTab('analytics')" class="flex items-center space-x-2 px-6 py-3 rounded-md transition-all ${state.activeTab === 'analytics' ? `bg-${theme.primary}-200 text-${theme.primary}-900 shadow-md` : `text-${theme.primary}-200 hover:bg-${theme.primary}-700`}">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                            <span class="font-medium">Analytics</span>
+                        </button>
+                        <button onclick="setActiveTab('settings')" class="flex items-center space-x-2 px-6 py-3 rounded-md transition-all ${state.activeTab === 'settings' ? `bg-${theme.primary}-200 text-${theme.primary}-900 shadow-md` : `text-${theme.primary}-200 hover:bg-${theme.primary}-700`}">
+                            <i data-lucide="settings" class="w-4 h-4"></i>
+                            <span class="font-medium">Settings</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderSigilCircle = () => {
+            const completedCount = state.spells.filter(spell => spell.completed).length;
+            const allComplete = completedCount === 5;
+            
+            const orderedSpells = [
+                state.spells.find(s => s.element === 'earth'),
+                state.spells.find(s => s.element === 'air'),
+                state.spells.find(s => s.element === 'fire'),
+                state.spells.find(s => s.element === 'water'),
+            ].filter(Boolean);
+            
+            const positions = [
+                { top: '10%', left: '50%', transform: 'translateX(-50%)' },
+                { top: '50%', right: '10%', transform: 'translateY(-50%)' },
+                { bottom: '10%', left: '50%', transform: 'translateX(-50%)' },
+                { top: '50%', left: '10%', transform: 'translateY(-50%)' },
+            ];
+
+            const spiritSpell = state.spells.find(s => s.element === 'spirit');
+
+            return `
+                <div class="relative w-48 h-48 mx-auto">
+                    <div class="absolute inset-0 border-2 border-amber-600 rounded-full opacity-60"></div>
+                    <div class="absolute inset-6 border border-amber-500 rounded-full opacity-40"></div>
+                    
+                    <div class="absolute inset-16 flex items-center justify-center">
+                        ${spiritSpell ? `
+                            <div class="relative">
+                                <div class="text-3xl font-bold transition-all duration-500 ${spiritSpell.completed ? `${elements.spirit.glow} animate-pulse drop-shadow-lg` : 'text-amber-800 opacity-30'}">
+                                    ${elements.spirit.symbol}
+                                </div>
+                                ${allComplete ? '<i data-lucide="star" class="absolute -top-1 -right-1 w-4 h-4 text-amber-300 animate-spin"></i>' : ''}
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    ${orderedSpells.map((spell, index) => {
+                        const element = elements[spell.element];
+                        const position = positions[index];
+                        
+                        return `
+                            <div class="absolute w-8 h-8 flex items-center justify-center" style="top: ${position.top}; left: ${position.left}; right: ${position.right}; bottom: ${position.bottom}; transform: ${position.transform}">
+                                <div class="relative">
+                                    <div class="text-2xl font-bold transition-all duration-500 ${spell.completed ? `${element.glow} animate-pulse drop-shadow-lg` : 'text-amber-800 opacity-30'}">
+                                        ${element.symbol}
+                                    </div>
+                                    ${element.hasLine ? `<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-4 h-0.5 transition-all duration-500 ${spell.completed ? `bg-current ${element.glow} animate-pulse drop-shadow-lg` : 'bg-amber-800 opacity-30'}"></div>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+
+                    ${allComplete ? `
+                        <div class="absolute inset-0 animate-pulse">
+                            <svg class="w-full h-full" viewBox="0 0 192 192">
+                                <polygon points="96,19 172,77 134,154 58,154 20,77" fill="none" stroke="rgb(252, 211, 77)" stroke-width="1" opacity="0.6"></polygon>
+                            </svg>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        };
+
+        const renderSpellbookView = () => {
+            const theme = getCurrentTheme();
+            const completedCount = state.spells.filter(spell => spell.completed).length;
+            const allComplete = completedCount === 5;
+            
+            return `
+                <div class="bg-gradient-to-r ${theme.card} rounded-lg shadow-2xl border-4 ${theme.border} overflow-hidden">
+                    <div class="grid md:grid-cols-2 min-h-[600px]">
+                        <div class="p-8 border-r-2 border-amber-300">
+                            <h2 class="text-2xl font-bold text-amber-900 mb-6 text-center">Today's Incantations</h2>
+                            
+                            <div class="space-y-4">
+                                ${state.spells.map((spell) => `
+                                    <div class="bg-amber-50 rounded-lg border border-amber-200 shadow-sm overflow-hidden" data-spell-id="${spell.id}">
+                                        <div class="p-4">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center space-x-3 flex-1">
+                                                    <button onclick="toggleSpell(${spell.id})" class="w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${spell.completed ? `bg-${elements[spell.element].color.split('-')[1]}-400 border-${elements[spell.element].color.split('-')[1]}-400` : 'border-amber-400 hover:border-amber-500'}">
+                                                        ${spell.completed ? '<i data-lucide="check" class="w-4 h-4 text-white"></i>' : ''}
+                                                    </button>
+                                                    
+                                                    ${spell.editable ? `
+                                                        <div class="flex-1 space-y-2">
+                                                            <input type="text" value="${spell.name}" class="w-full bg-white border border-amber-300 rounded px-2 py-1 text-amber-900" onblur="confirmEdit(${spell.id}, this.value)" onkeypress="if(event.key==='Enter')confirmEdit(${spell.id}, this.value)" autofocus>
+                                                            <div class="flex space-x-2">
+                                                                <button onclick="confirmEdit(${spell.id})" class="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 transition-colors">
+                                                                    <i data-lucide="check" class="w-3 h-3 inline mr-1"></i>Save
+                                                                </button>
+                                                                <button onclick="cancelEdit(${spell.id})" class="bg-red-600 text-white px-3 py-1 rounded text-xs hover:bg-red-700 transition-colors">
+                                                                    <i data-lucide="x" class="w-3 h-3 inline mr-1"></i>Cancel
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ` : `
+                                                        <div class="flex items-center space-x-2 flex-1">
+                                                            <span class="font-medium italic ${spell.completed ? 'line-through text-amber-600' : 'text-amber-900'}">${spell.name}</span>
+                                                            ${spell.streak > 0 ? `
+                                                                <div class="flex items-center space-x-1 bg-gradient-to-r from-orange-400 to-red-400 text-white px-2 py-1 rounded-full text-xs font-bold shadow-md">
+                                                                    <i data-lucide="flame" class="w-3 h-3"></i>
+                                                                    <span>${spell.streak} day${spell.streak !== 1 ? 's' : ''}</span>
+                                                                </div>
+                                                            ` : ''}
+                                                        </div>
+                                                    `}
+                                                </div>
+                                                
+                                                <div class="flex items-center space-x-2">
+                                                    <span class="text-sm ${elements[spell.element].color}">${spell.element}</span>
+                                                    <button onclick="toggleDescription(${spell.id})" class="text-amber-600 hover:text-amber-800 transition-all p-1 rounded" title="Toggle description">
+                                                        <i data-lucide="chevron-down" class="w-4 h-4 transition-transform duration-200 ${spell.showDescription ? 'rotate-180' : ''}"></i>
+                                                    </button>
+                                                    <button onclick="startEdit(${spell.id})" class="text-amber-600 hover:text-amber-800 transition-colors" title="Edit spell name (resets streak)">
+                                                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        ${spell.showDescription ? `
+                                            <div class="px-4 pb-4 pt-0">
+                                                <div class="bg-amber-100 rounded-md p-3 border-t border-amber-200">
+                                                    ${spell.editable ? `
+                                                        <textarea class="w-full bg-white border border-amber-300 rounded px-2 py-1 text-amber-900 text-sm leading-relaxed italic resize-none" rows="3" placeholder="Enter description...">${spell.description}</textarea>
+                                                    ` : `
+                                                        <p class="text-amber-800 text-sm leading-relaxed italic">${spell.description}</p>
+                                                    `}
+                                                </div>
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+
+                            <div class="mt-6 text-center">
+                                <p class="font-medium ${completedCount >= 3 ? 'text-green-700' : 'text-amber-700'}">
+                                    Rituals Complete: ${completedCount}/5
+                                    ${completedCount >= 3 && completedCount < 5 ? '<span class="text-red-600 text-sm ml-2">(Penalties apply)</span>' : ''}
+                                </p>
+                                <div class="w-full bg-amber-200 rounded-full h-2 mt-2">
+                                    <div class="h-2 rounded-full transition-all duration-500 ${completedCount >= 3 ? 'bg-green-600' : 'bg-amber-600'}" style="width: ${(completedCount / 5) * 100}%"></div>
+                                </div>
+                                
+                                ${completedCount > 0 ? `
+                                    <div class="mt-2 text-xs">
+                                        <span class="${calculateTotalXP() >= 0 ? 'text-green-600' : 'text-red-600'}">
+                                            Potential XP: ${calculateTotalXP() >= 0 ? '+' : ''}${calculateTotalXP()}
+                                        </span>
+                                        ${state.currentXP < 0 ? `
+                                            <div class="text-red-600 font-bold mt-1">
+                                                Current Debt: ${state.currentXP} XP
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                ` : ''}
+                                
+                                ${state.streakResetNotification ? `
+                                    <div class="mt-3 animate-bounce">
+                                        <div class="bg-red-100 border border-red-300 text-red-800 px-3 py-2 rounded-lg text-sm">
+                                            ⚠️ Streak reset for "${state.streakResetNotification}" due to editing
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <div class="p-8">
+                            <h2 class="text-2xl font-bold text-amber-900 mb-6 text-center">Elemental Sigil</h2>
+                            
+                            <div class="flex flex-col items-center space-y-6">
+                                ${renderSigilCircle()}
+                                
+                                ${completedCount >= 3 ? `
+                                    <div class="text-center animate-bounce">
+                                        <i data-lucide="sparkles" class="w-8 h-8 text-amber-600 mx-auto mb-2"></i>
+                                        <p class="text-amber-800 font-bold">
+                                            ${completedCount === 5 ? 'Perfect completion!' : `${completedCount}/5 rituals complete!`}
+                                        </p>
+                                        <p class="text-amber-700 text-sm">The journal has been unlocked</p>
+                                        ${completedCount < 5 ? '<p class="text-red-600 text-xs mt-1">⚠️ Incomplete tasks will reduce XP</p>' : ''}
+                                    </div>
+                                ` : ''}
+
+                                ${state.journalUnlocked ? `
+                                    <button onclick="toggleJournal()" class="bg-amber-600 text-white px-6 py-2 rounded-lg hover:bg-amber-700 transition-colors font-medium">
+                                        ${state.showJournal ? 'Hide Journal' : 'Open Sacred Journal'}
+                                    </button>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+
+                    ${state.showJournal && state.journalUnlocked ? `
+                        <div class="border-t-2 border-amber-300 p-8 bg-gradient-to-r from-amber-50 to-yellow-50">
+                            <h3 class="text-xl font-bold text-amber-900 mb-4 text-center">Sacred Journal of Reflection</h3>
+                            <textarea id="journalEntry" oninput="updateJournalEntry(this.value)" onchange="updateJournalEntry(this.value)" placeholder="Record your thoughts, insights, and magical experiences from today's completed rituals..." class="w-full h-32 p-4 border-2 border-amber-300 rounded-lg bg-white text-amber-900 placeholder-amber-500 resize-none focus:outline-none focus:border-amber-500">${state.currentJournalEntry}</textarea>
+                            <div class="flex justify-between items-center mt-4">
+                                <p class="text-amber-600 text-sm italic">
+                                    This sacred space is yours to reflect upon the day's magical accomplishments.
+                                </p>
+                                <button onclick="saveJournalEntry()" class="flex items-center space-x-2 bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition-colors font-medium">
+                                    <i data-lucide="save" class="w-4 h-4"></i>
+                                    <span>Save Entry</span>
+                                </button>
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        };
+
+        const renderLogView = () => {
+            return `
+                <div class="bg-gradient-to-r from-amber-100 via-yellow-50 to-amber-100 rounded-lg shadow-2xl border-4 border-amber-800 overflow-hidden">
+                    <div class="p-8">
+                        <h2 class="text-3xl font-bold text-amber-900 mb-6 text-center">Sacred Log of Accomplishments</h2>
+                        
+                        ${state.journalEntries.length === 0 ? `
+                            <div class="text-center py-12">
+                                <i data-lucide="scroll-text" class="w-16 h-16 text-amber-400 mx-auto mb-4"></i>
+                                <p class="text-amber-700 text-lg font-medium mb-2">Your sacred log awaits...</p>
+                                <p class="text-amber-600">Complete at least 3 daily rituals and record your reflections to begin your mystical journey.</p>
+                            </div>
+                        ` : `
+                            <!-- Log Organization Controls -->
+                            <div class="bg-amber-50 rounded-lg p-4 mb-6 border border-amber-200">
+                                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <!-- Search -->
+                                    <div>
+                                        <label class="block text-amber-800 text-sm font-medium mb-2">Search Entries</label>
+                                        <input type="text" id="logSearch" placeholder="Search reflections..." 
+                                               class="w-full px-3 py-2 border border-amber-300 rounded-md bg-white text-amber-900 placeholder-amber-500 focus:outline-none focus:border-amber-500"
+                                               oninput="filterLogEntries()">
+                                    </div>
+                                    
+                                    <!-- Sort -->
+                                    <div>
+                                        <label class="block text-amber-800 text-sm font-medium mb-2">Sort By</label>
+                                        <select id="logSort" onchange="filterLogEntries()" 
+                                                class="w-full px-3 py-2 border border-amber-300 rounded-md bg-white text-amber-900 focus:outline-none focus:border-amber-500">
+                                            <option value="newest">Newest First</option>
+                                            <option value="oldest">Oldest First</option>
+                                            <option value="xp-high">Highest XP</option>
+                                            <option value="xp-low">Lowest XP</option>
+                                            <option value="completion-high">Most Completed</option>
+                                            <option value="completion-low">Least Completed</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Filter -->
+                                    <div>
+                                        <label class="block text-amber-800 text-sm font-medium mb-2">Filter By</label>
+                                        <select id="logFilter" onchange="filterLogEntries()" 
+                                                class="w-full px-3 py-2 border border-amber-300 rounded-md bg-white text-amber-900 focus:outline-none focus:border-amber-500">
+                                            <option value="all">All Entries</option>
+                                            <option value="positive-xp">Positive XP Only</option>
+                                            <option value="negative-xp">Negative XP Only</option>
+                                            <option value="perfect">Perfect Completion (5/5)</option>
+                                            <option value="partial">Partial Completion (3-4/5)</option>
+                                            <option value="streaks">With Streaks</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <!-- Quick Stats -->
+                                <div class="mt-4 pt-4 border-t border-amber-200">
+                                    <div class="flex flex-wrap justify-between text-sm text-amber-700">
+                                        <span>Total Entries: <strong>${state.journalEntries.length}</strong></span>
+                                        <span>Showing: <strong id="showingCount">${state.journalEntries.length}</strong></span>
+                                        <span>Average XP: <strong>${Math.round(state.journalEntries.reduce((sum, entry) => sum + (entry.totalXPGained || 0), 0) / Math.max(1, state.journalEntries.length))}</strong></span>
+                                        <span>Perfect Days: <strong>${state.journalEntries.filter(entry => entry.completedSpells.length === 5).length}</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="space-y-6 max-h-[500px] overflow-y-auto" id="logEntriesContainer">
+                                ${state.journalEntries.map((entry) => `
+                                    <div class="bg-amber-50 rounded-lg p-6 border-2 border-amber-200 shadow-md">
+                                        <div class="flex justify-between items-start mb-4">
+                                            <div>
+                                                <h3 class="text-lg font-bold text-amber-900">${formatDate(entry.timestamp)}</h3>
+                                                <p class="text-amber-600 text-sm">${formatTime(entry.timestamp)}</p>
+                                            </div>
+                                            <div class="flex items-center space-x-3">
+                                                ${entry.totalXPGained !== undefined ? `
+                                                    <div class="text-right">
+                                                        <div class="px-3 py-1 rounded-full text-sm font-bold ${entry.totalXPGained > 0 ? 'bg-green-200 text-green-800' : (entry.totalXPGained === 0 ? 'bg-gray-200 text-gray-800' : 'bg-red-200 text-red-800')}">
+                                                            ${entry.totalXPGained > 0 ? '+' : ''}${entry.totalXPGained} XP
+                                                        </div>
+                                                        ${entry.xpBreakdown ? `
+                                                            <div class="text-xs text-amber-600 mt-1">
+                                                                ${entry.xpBreakdown.baseXP > 0 ? `<div>Base: +${entry.xpBreakdown.baseXP}</div>` : ''}
+                                                                ${entry.xpBreakdown.streakBonus > 0 ? `<div>Streaks: +${entry.xpBreakdown.streakBonus}</div>` : ''}
+                                                                ${entry.xpBreakdown.penalty > 0 ? `<div class=\"text-red-600\">Penalty: -${entry.xpBreakdown.penalty}</div>` : ''}
+                                                            </div>
+                                                        ` : ''}
+                                                    </div>
+                                                ` : ''}
+                                                <div class="flex space-x-1">
+                                                    ${Array(entry.completedSpells.length).fill(0).map(() => '<i data-lucide="star" class="w-4 h-4 text-amber-500" fill="currentColor"></i>').join('')}
+                                                    ${Array(5 - entry.completedSpells.length).fill(0).map(() => '<i data-lucide="star" class="w-4 h-4 text-amber-300"></i>').join('')}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="mb-4">
+                                            <h4 class="text-sm font-semibold text-amber-700 mb-2">Completed Rituals & Streaks:</h4>
+                                            <div class="flex flex-wrap gap-2">
+                                                ${entry.streaks ? entry.streaks.filter(s => entry.completedSpells.includes(s.name)).map((streak, index) => {
+                                                    const spell = state.spells.find(s => s.name === streak.name);
+                                                    return `
+                                                        <div class="bg-amber-200 text-amber-800 px-2 py-1 rounded-md text-xs font-medium flex items-center space-x-1 relative group cursor-help" 
+                                                             onmouseover="showSpellTooltip(event, '${spell ? spell.description.replace(/'/g, "\\'") : ''}', '${spell ? spell.element : ''}')" 
+                                                             onmouseout="hideSpellTooltip()">
+                                                            <span>${streak.name}</span>
+                                                            ${streak.streak > 1 ? `
+                                                                <i data-lucide="flame" class="w-3 h-3"></i>
+                                                                <span class="font-bold">${streak.streak}</span>
+                                                            ` : ''}
+                                                        </div>
+                                                    `;
+                                                }).join('') : entry.completedSpells.map((spell, index) => {
+                                                    const spellData = state.spells.find(s => s.name === spell);
+                                                    return `
+                                                        <span class="bg-amber-200 text-amber-800 px-2 py-1 rounded-md text-xs font-medium relative group cursor-help" 
+                                                              onmouseover="showSpellTooltip(event, '${spellData ? spellData.description.replace(/'/g, "\\'") : ''}', '${spellData ? spellData.element : ''}')" 
+                                                              onmouseout="hideSpellTooltip()">${spell}</span>
+                                                    `;
+                                                }).join('')}
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="bg-white rounded-md p-4 border border-amber-200">
+                                            <h4 class="text-sm font-semibold text-amber-700 mb-2">Sacred Reflection:</h4>
+                                            <p class="text-amber-900 leading-relaxed whitespace-pre-wrap">${entry.content}</p>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `;
+        };
+        
+        // Log organization functions
+        window.filterLogEntries = () => {
+            const searchTerm = document.getElementById('logSearch')?.value.toLowerCase() || '';
+            const sortBy = document.getElementById('logSort')?.value || 'newest';
+            const filterBy = document.getElementById('logFilter')?.value || 'all';
+            
+            let filteredEntries = [...state.journalEntries];
+            
+            // Apply search filter
+            if (searchTerm) {
+                filteredEntries = filteredEntries.filter(entry => 
+                    entry.content.toLowerCase().includes(searchTerm) ||
+                    entry.completedSpells.some(spell => spell.toLowerCase().includes(searchTerm))
+                );
+            }
+            
+            // Apply category filter
+            switch (filterBy) {
+                case 'positive-xp':
+                    filteredEntries = filteredEntries.filter(entry => (entry.totalXPGained || 0) > 0);
+                    break;
+                case 'negative-xp':
+                    filteredEntries = filteredEntries.filter(entry => (entry.totalXPGained || 0) < 0);
+                    break;
+                case 'perfect':
+                    filteredEntries = filteredEntries.filter(entry => entry.completedSpells.length === 5);
+                    break;
+                case 'partial':
+                    filteredEntries = filteredEntries.filter(entry => entry.completedSpells.length >= 3 && entry.completedSpells.length <= 4);
+                    break;
+                case 'streaks':
+                    filteredEntries = filteredEntries.filter(entry => 
+                        entry.streaks && entry.streaks.some(streak => streak.streak > 1)
+                    );
+                    break;
+            }
+            
+            // Apply sorting
+            switch (sortBy) {
+                case 'oldest':
+                    filteredEntries.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    break;
+                case 'xp-high':
+                    filteredEntries.sort((a, b) => (b.totalXPGained || 0) - (a.totalXPGained || 0));
+                    break;
+                case 'xp-low':
+                    filteredEntries.sort((a, b) => (a.totalXPGained || 0) - (b.totalXPGained || 0));
+                    break;
+                case 'completion-high':
+                    filteredEntries.sort((a, b) => b.completedSpells.length - a.completedSpells.length);
+                    break;
+                case 'completion-low':
+                    filteredEntries.sort((a, b) => a.completedSpells.length - b.completedSpells.length);
+                    break;
+                default: // newest
+                    filteredEntries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            }
+            
+            // Update the display
+            const container = document.getElementById('logEntriesContainer');
+            const showingCount = document.getElementById('showingCount');
+            
+            if (container) {
+                container.innerHTML = filteredEntries.map((entry) => `
+                    <div class="bg-amber-50 rounded-lg p-6 border-2 border-amber-200 shadow-md">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-amber-900">${formatDate(entry.timestamp)}</h3>
+                                <p class="text-amber-600 text-sm">${formatTime(entry.timestamp)}</p>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                                ${entry.totalXPGained !== undefined ? `
+                                    <div class="text-right">
+                                        <div class="px-3 py-1 rounded-full text-sm font-bold ${entry.totalXPGained > 0 ? 'bg-green-200 text-green-800' : (entry.totalXPGained === 0 ? 'bg-gray-200 text-gray-800' : 'bg-red-200 text-red-800')}">
+                                            ${entry.totalXPGained > 0 ? '+' : ''}${entry.totalXPGained} XP
+                                        </div>
+                                        ${entry.xpBreakdown ? `
+                                            <div class="text-xs text-amber-600 mt-1">
+                                                ${entry.xpBreakdown.baseXP > 0 ? `<div>Base: +${entry.xpBreakdown.baseXP}</div>` : ''}
+                                                ${entry.xpBreakdown.streakBonus > 0 ? `<div>Streaks: +${entry.xpBreakdown.streakBonus}</div>` : ''}
+                                                ${entry.xpBreakdown.penalty > 0 ? `<div class=\"text-red-600\">Penalty: -${entry.xpBreakdown.penalty}</div>` : ''}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                ` : ''}
+                                <div class="flex space-x-1">
+                                    ${Array(entry.completedSpells.length).fill(0).map(() => '<i data-lucide="star" class="w-4 h-4 text-amber-500" fill="currentColor"></i>').join('')}
+                                    ${Array(5 - entry.completedSpells.length).fill(0).map(() => '<i data-lucide="star" class="w-4 h-4 text-amber-300"></i>').join('')}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <h4 class="text-sm font-semibold text-amber-700 mb-2">Completed Rituals & Streaks:</h4>
+                            <div class="flex flex-wrap gap-2">
+                                ${entry.streaks ? entry.streaks.filter(s => entry.completedSpells.includes(s.name)).map((streak, index) => {
+                                    const spell = state.spells.find(s => s.name === streak.name);
+                                    return `
+                                        <div class="bg-amber-200 text-amber-800 px-2 py-1 rounded-md text-xs font-medium flex items-center space-x-1 relative group cursor-help" 
+                                             onmouseover="showSpellTooltip(event, '${spell ? spell.description.replace(/'/g, "\\'") : ''}', '${spell ? spell.element : ''}')" 
+                                             onmouseout="hideSpellTooltip()">
+                                            <span>${streak.name}</span>
+                                            ${streak.streak > 1 ? `
+                                                <i data-lucide="flame" class="w-3 h-3"></i>
+                                                <span class="font-bold">${streak.streak}</span>
+                                            ` : ''}
+                                        </div>
+                                    `;
+                                }).join('') : entry.completedSpells.map((spell, index) => {
+                                    const spellData = state.spells.find(s => s.name === spell);
+                                    return `
+                                        <span class="bg-amber-200 text-amber-800 px-2 py-1 rounded-md text-xs font-medium relative group cursor-help" 
+                                              onmouseover="showSpellTooltip(event, '${spellData ? spellData.description.replace(/'/g, "\\'") : ''}', '${spellData ? spellData.element : ''}')" 
+                                              onmouseout="hideSpellTooltip()">${spell}</span>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-md p-4 border border-amber-200">
+                            <h4 class="text-sm font-semibold text-amber-700 mb-2">Sacred Reflection:</h4>
+                            <p class="text-amber-900 leading-relaxed whitespace-pre-wrap">${entry.content}</p>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Re-initialize Lucide icons
+                lucide.createIcons();
+            }
+            
+            if (showingCount) {
+                showingCount.textContent = filteredEntries.length;
+            }
+        };
+
+        const renderAnalyticsView = () => {
+            const theme = getCurrentTheme();
+            const analytics = calculateAnalytics();
+            const totalEntries = state.journalEntries.length;
+            const totalXP = state.journalEntries.reduce((sum, entry) => sum + (entry.totalXPGained || 0), 0);
+            const averageXP = totalEntries > 0 ? Math.round(totalXP / totalEntries) : 0;
+            const perfectDays = state.journalEntries.filter(entry => entry.completedSpells.length === 5).length;
+            const currentStreaks = state.spells.map(spell => spell.streak).filter(streak => streak > 0);
+            const maxStreak = currentStreaks.length > 0 ? Math.max(...currentStreaks) : 0;
+
+            return `
+                <div class="bg-gradient-to-r ${theme.card} rounded-lg shadow-2xl border-4 ${theme.border} overflow-hidden">
+                    <div class="p-8">
+                        <h2 class="text-3xl font-bold ${theme.text} mb-6 text-center">Mystical Analytics</h2>
+                        
+                        <!-- Quick Stats -->
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                            <div class="bg-${theme.primary}-50 rounded-lg p-4 border border-${theme.primary}-200 text-center">
+                                <div class="text-2xl font-bold text-${theme.primary}-700">${totalEntries}</div>
+                                <div class="text-sm text-${theme.primary}-600">Total Entries</div>
+                            </div>
+                            <div class="bg-${theme.primary}-50 rounded-lg p-4 border border-${theme.primary}-200 text-center">
+                                <div class="text-2xl font-bold text-${theme.primary}-700">${totalXP}</div>
+                                <div class="text-sm text-${theme.primary}-600">Total XP Earned</div>
+                            </div>
+                            <div class="bg-${theme.primary}-50 rounded-lg p-4 border border-${theme.primary}-200 text-center">
+                                <div class="text-2xl font-bold text-${theme.primary}-700">${perfectDays}</div>
+                                <div class="text-sm text-${theme.primary}-600">Perfect Days</div>
+                            </div>
+                            <div class="bg-${theme.primary}-50 rounded-lg p-4 border border-${theme.primary}-200 text-center">
+                                <div class="text-2xl font-bold text-${theme.primary}-700">${maxStreak}</div>
+                                <div class="text-sm text-${theme.primary}-600">Max Streak</div>
+                            </div>
+                        </div>
+
+                        <!-- Goals Section -->
+                        <div class="bg-${theme.primary}-50 rounded-lg p-6 mb-8 border border-${theme.primary}-200">
+                            <h3 class="text-xl font-bold ${theme.text} mb-4">Mystical Goals</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-${theme.primary}-800 text-sm font-medium mb-2">Daily XP Target</label>
+                                    <input type="number" id="xpTarget" value="${state.goals.xpTarget}" 
+                                           class="w-full px-3 py-2 border border-${theme.primary}-300 rounded-md bg-white text-${theme.primary}-900"
+                                           onchange="updateGoal('xpTarget', this.value)">
+                                </div>
+                                <div>
+                                    <label class="block text-${theme.primary}-800 text-sm font-medium mb-2">Streak Target</label>
+                                    <input type="number" id="streakTarget" value="${state.goals.streakTarget}" 
+                                           class="w-full px-3 py-2 border border-${theme.primary}-300 rounded-md bg-white text-${theme.primary}-900"
+                                           onchange="updateGoal('streakTarget', this.value)">
+                                </div>
+                                <div>
+                                    <label class="block text-${theme.primary}-800 text-sm font-medium mb-2">Weekly Entries</label>
+                                    <input type="number" id="weeklyTarget" value="${state.goals.weeklyTarget}" 
+                                           class="w-full px-3 py-2 border border-${theme.primary}-300 rounded-md bg-white text-${theme.primary}-900"
+                                           onchange="updateGoal('weeklyTarget', this.value)">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Progress Charts -->
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                            <!-- XP Progress -->
+                            <div class="bg-${theme.primary}-50 rounded-lg p-6 border border-${theme.primary}-200">
+                                <h4 class="text-lg font-bold ${theme.text} mb-4">XP Progress</h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <div class="flex justify-between text-sm text-${theme.primary}-700 mb-1">
+                                            <span>Current Level</span>
+                                            <span>${state.currentLevel}</span>
+                                        </div>
+                                        <div class="w-full bg-${theme.primary}-200 rounded-full h-2">
+                                            <div class="bg-${theme.primary}-600 h-2 rounded-full" style="width: ${getXPProgressPercent()}%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-sm text-${theme.primary}-700 mb-1">
+                                            <span>Average Daily XP</span>
+                                            <span>${averageXP}</span>
+                                        </div>
+                                        <div class="w-full bg-${theme.primary}-200 rounded-full h-2">
+                                            <div class="bg-${theme.primary}-600 h-2 rounded-full" style="width: ${Math.min(100, (averageXP / 200) * 100)}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Completion Rate -->
+                            <div class="bg-${theme.primary}-50 rounded-lg p-6 border border-${theme.primary}-200">
+                                <h4 class="text-lg font-bold ${theme.text} mb-4">Completion Rate</h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <div class="flex justify-between text-sm text-${theme.primary}-700 mb-1">
+                                            <span>Perfect Days</span>
+                                            <span>${perfectDays}/${totalEntries} (${totalEntries > 0 ? Math.round((perfectDays / totalEntries) * 100) : 0}%)</span>
+                                        </div>
+                                        <div class="w-full bg-${theme.primary}-200 rounded-full h-2">
+                                            <div class="bg-${theme.primary}-600 h-2 rounded-full" style="width: ${totalEntries > 0 ? (perfectDays / totalEntries) * 100 : 0}%"></div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <div class="flex justify-between text-sm text-${theme.primary}-700 mb-1">
+                                            <span>Current Streaks</span>
+                                            <span>${currentStreaks.length} active</span>
+                                        </div>
+                                        <div class="w-full bg-${theme.primary}-200 rounded-full h-2">
+                                            <div class="bg-${theme.primary}-600 h-2 rounded-full" style="width: ${Math.min(100, (currentStreaks.length / 5) * 100)}%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Export Section -->
+                        <div class="bg-${theme.primary}-50 rounded-lg p-6 border border-${theme.primary}-200">
+                            <h3 class="text-xl font-bold ${theme.text} mb-4">Export Your Journey</h3>
+                            <div class="flex flex-wrap gap-4">
+                                <button onclick="exportData()" class="bg-${theme.primary}-600 text-white px-6 py-2 rounded-lg hover:bg-${theme.primary}-700 transition-colors font-medium">
+                                    <i data-lucide="download" class="w-4 h-4 inline mr-2"></i>
+                                    Export CSV
+                                </button>
+                                <button onclick="showMoodTracker()" class="bg-${theme.primary}-600 text-white px-6 py-2 rounded-lg hover:bg-${theme.primary}-700 transition-colors font-medium">
+                                    <i data-lucide="heart" class="w-4 h-4 inline mr-2"></i>
+                                    Mood Tracker
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderSettingsView = () => {
+            const theme = getCurrentTheme();
+            return `
+                <div class="bg-gradient-to-r ${theme.card} rounded-lg shadow-2xl border-4 ${theme.border} overflow-hidden">
+                    <div class="p-8">
+                        <h2 class="text-3xl font-bold ${theme.text} mb-6 text-center">Mystical Settings</h2>
+                        
+                        <!-- Theme Selection -->
+                        <div class="bg-${theme.primary}-50 rounded-lg p-6 mb-8 border border-${theme.primary}-200">
+                            <h3 class="text-xl font-bold ${theme.text} mb-4">Choose Your Theme</h3>
+                            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                ${Object.entries(themes).map(([key, themeData]) => `
+                                    <button onclick="changeTheme('${key}')" 
+                                            class="p-4 rounded-lg border-2 transition-all ${state.theme === key ? `border-${theme.primary}-600 bg-${theme.primary}-100` : `border-${theme.primary}-200 bg-white hover:bg-${theme.primary}-50`}">
+                                        <div class="text-lg font-bold ${themeData.text}">${themeData.name}</div>
+                                        <div class="text-sm text-${theme.primary}-600 mt-1">${themeData.primary} theme</div>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Dark Mode Toggle -->
+                        <div class="bg-${theme.primary}-50 rounded-lg p-6 mb-8 border border-${theme.primary}-200">
+                            <h3 class="text-xl font-bold ${theme.text} mb-4">Display Settings</h3>
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <div class="font-medium text-${theme.primary}-800">Dark Mode</div>
+                                    <div class="text-sm text-${theme.primary}-600">Reduce eye strain in low light</div>
+                                </div>
+                                <button onclick="toggleDarkMode()" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${state.darkMode ? `bg-${theme.primary}-600` : 'bg-gray-200'}">
+                                    <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${state.darkMode ? 'translate-x-6' : 'translate-x-1'}"></span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Reminders -->
+                        <div class="bg-${theme.primary}-50 rounded-lg p-6 mb-8 border border-${theme.primary}-200">
+                            <h3 class="text-xl font-bold ${theme.text} mb-4">Smart Reminders</h3>
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="font-medium text-${theme.primary}-800">Enable Reminders</div>
+                                        <div class="text-sm text-${theme.primary}-600">Get notified to complete your rituals</div>
+                                    </div>
+                                    <button onclick="toggleReminders()" class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${state.reminders.enabled ? `bg-${theme.primary}-600` : 'bg-gray-200'}">
+                                        <span class="inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${state.reminders.enabled ? 'translate-x-6' : 'translate-x-1'}"></span>
+                                    </button>
+                                </div>
+                                ${state.reminders.enabled ? `
+                                    <div>
+                                        <label class="block text-${theme.primary}-800 text-sm font-medium mb-2">Reminder Time</label>
+                                        <input type="time" value="${state.reminders.time}" 
+                                               class="px-3 py-2 border border-${theme.primary}-300 rounded-md bg-white text-${theme.primary}-900"
+                                               onchange="updateReminderTime(this.value)">
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+
+                        <!-- Daily Wisdom -->
+                        <div class="bg-${theme.primary}-50 rounded-lg p-6 border border-${theme.primary}-200">
+                            <h3 class="text-xl font-bold ${theme.text} mb-4">Daily Wisdom</h3>
+                            <div class="bg-white rounded-lg p-4 border border-${theme.primary}-200">
+                                <p class="text-${theme.primary}-800 italic text-center">"${getDailyWisdom()}"</p>
+                            </div>
+                            <button onclick="refreshWisdom()" class="mt-4 bg-${theme.primary}-600 text-white px-4 py-2 rounded-lg hover:bg-${theme.primary}-700 transition-colors">
+                                <i data-lucide="refresh-cw" class="w-4 h-4 inline mr-2"></i>
+                                New Wisdom
+                            </button>
+                        </div>
+
+                        <!-- Danger Zone -->
+                        <div class="mt-10 pt-8 border-t-2 border-red-200">
+                            <h3 class="text-xl font-bold text-red-700 mb-4">Danger Zone</h3>
+                            <button onclick="confirmClearData()" class="bg-red-600 text-white px-6 py-2 rounded-lg hover:bg-red-700 transition-colors font-bold">
+                                <i data-lucide="trash-2" class="w-4 h-4 inline mr-2"></i>
+                                Clear All Data
+                            </button>
+                            <p class="text-red-500 text-sm mt-2">This will erase all your rituals, journal, and progress. This action cannot be undone.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        const renderWelcomeModal = () => {
+            if (!state.showWelcome) return '';
+            
+            return `
+                <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-2">
+                    <div class="bg-gradient-to-br from-amber-100 via-yellow-50 to-amber-100 rounded-lg shadow-2xl border-4 border-amber-800 max-w-md w-full max-h-[90vh] overflow-y-auto">
+                        <div class="p-4">
+                            <div class="text-center mb-4 relative">
+                                <button onclick="closeWelcome()" class="absolute -top-2 -right-2 bg-amber-600 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-amber-700 transition-colors shadow-lg">
+                                    <i data-lucide="x" class="w-4 h-4"></i>
+                                </button>
+                                <h2 class="text-2xl font-bold text-amber-900 mb-1">🧙‍♂️ Welcome to Focuscraft</h2>
+                                <p class="text-amber-700 text-sm italic">Daily habits → Magical rituals</p>
+                            </div>
+
+                            <div class="space-y-3 text-amber-900 text-sm">
+                                <div class="bg-amber-50 p-3 rounded border border-amber-200">
+                                    <h3 class="font-bold mb-1">✨ Daily Spells</h3>
+                                    <p class="text-xs">Complete 5 daily tasks. Edit names with pencil icon. View descriptions with arrow.</p>
+                                </div>
+
+                                <div class="bg-orange-50 p-3 rounded border border-orange-200">
+                                    <h3 class="font-bold mb-1">🔥 Streaks = Power</h3>
+                                    <p class="text-xs">Consistent completion builds streaks (+15 XP each). Missing tasks breaks them.</p>
+                                </div>
+
+                                <div class="bg-green-50 p-3 rounded border border-green-200">
+                                    <h3 class="font-bold mb-1 text-green-800">⚡ XP System</h3>
+                                    <p class="text-xs text-green-800">
+                                        <strong>Earn:</strong> 120 base + streak bonuses<br/>
+                                        <strong>Lose:</strong> 25 XP per missed task
+                                    </p>
+                                </div>
+
+                                <div class="bg-red-50 p-3 rounded border border-red-200">
+                                    <h3 class="font-bold mb-1 text-red-800">💀 Real Consequences</h3>
+                                    <p class="text-xs text-red-800">Poor days = negative XP debt. Recovery takes effort!</p>
+                                </div>
+
+                                <div class="bg-purple-50 p-3 rounded border border-purple-200">
+                                    <h3 class="font-bold mb-1 text-purple-800">📜 Sacred Journal</h3>
+                                    <p class="text-xs text-purple-800">Complete 3+ tasks → unlock journal → reflect & earn XP → cycle resets</p>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 text-center">
+                                <button onclick="closeWelcome()" class="bg-amber-600 text-white px-6 py-2 rounded-lg hover:bg-amber-700 transition-colors font-bold shadow-lg w-full">
+                                    Begin Journey! ✨
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        };
+
+        // Save state to localStorage
+        const saveState = () => {
+            localStorage.setItem('focuscraft-state', JSON.stringify(state));
+        };
+
+        // Global functions for event handlers
+        window.setActiveTab = (tab) => {
+            state.activeTab = tab;
+            saveState();
+            updateUI();
+        };
+
+        window.toggleSpell = toggleSpell;
+        window.editSpell = editSpell;
+        window.editSpellWithDescription = (id, newName) => {
+            const spell = state.spells.find(s => s.id === id);
+            const descriptionElement = document.querySelector(`[data-spell-id="${id}"] textarea`);
+            const newDescription = descriptionElement ? descriptionElement.value : spell.description;
+            editSpell(id, newName, newDescription);
+        };
+        
+        window.confirmEdit = (id, newName) => {
+            const spell = state.spells.find(s => s.id === id);
+            const nameInput = document.querySelector(`[data-spell-id="${id}"] input[type="text"]`);
+            const descriptionElement = document.querySelector(`[data-spell-id="${id}"] textarea`);
+            
+            const finalName = newName || (nameInput ? nameInput.value : spell.name);
+            const newDescription = descriptionElement ? descriptionElement.value : spell.description;
+            
+            editSpell(id, finalName, newDescription);
+        };
+        
+        window.cancelEdit = (id) => {
+            state.spells = state.spells.map(spell => 
+                spell.id === id ? { ...spell, editable: false, showDescription: false } : spell
+            );
+            saveState();
+            updateUI();
+        };
+        
+        // Tooltip functions for spell descriptions
+        window.showSpellTooltip = (event, description, element) => {
+            if (!description) return;
+            
+            // Remove existing tooltip
+            const existingTooltip = document.getElementById('spell-tooltip');
+            if (existingTooltip) {
+                existingTooltip.remove();
+            }
+            
+            // Create tooltip
+            const tooltip = document.createElement('div');
+            tooltip.id = 'spell-tooltip';
+            tooltip.className = 'fixed z-50 bg-amber-900 text-amber-100 p-3 rounded-lg shadow-lg max-w-xs border border-amber-600';
+            tooltip.style.left = (event.pageX + 10) + 'px';
+            tooltip.style.top = (event.pageY - 10) + 'px';
+            
+            const elementColor = elements[element] ? elements[element].color : 'text-amber-400';
+            tooltip.innerHTML = `
+                <div class="text-xs font-semibold ${elementColor} mb-1">${element || 'Unknown Element'}</div>
+                <div class="text-sm leading-relaxed italic">${description}</div>
+            `;
+            
+            document.body.appendChild(tooltip);
+        };
+        
+        window.hideSpellTooltip = () => {
+            const tooltip = document.getElementById('spell-tooltip');
+            if (tooltip) {
+                tooltip.remove();
+            }
+        };
+        window.startEdit = startEdit;
+        window.toggleDescription = toggleDescription;
+        window.saveJournalEntry = saveJournalEntry;
+        window.toggleJournal = () => {
+            state.showJournal = !state.showJournal;
+            saveState();
+            updateUI();
+        };
+        window.updateJournalEntry = (value) => {
+            console.log('updateJournalEntry called with:', value);
+            state.currentJournalEntry = value;
+            saveState();
+        };
+        window.closeWelcome = () => {
+            state.showWelcome = false;
+            saveState();
+            // Remove the modal from DOM
+            const modal = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-75');
+            if (modal) {
+                modal.remove();
+            }
+            updateUI();
+        };
+
+        // New feature functions
+        window.changeTheme = (theme) => {
+            state.theme = theme;
+            saveState();
+            updateUI();
+        };
+
+        window.toggleDarkMode = () => {
+            state.darkMode = !state.darkMode;
+            saveState();
+            updateUI();
+        };
+
+        window.toggleReminders = () => {
+            state.reminders.enabled = !state.reminders.enabled;
+            saveState();
+            updateUI();
+        };
+
+        window.updateReminderTime = (time) => {
+            state.reminders.time = time;
+            saveState();
+        };
+
+        window.updateGoal = (goalType, value) => {
+            state.goals[goalType] = parseInt(value) || 0;
+            saveState();
+        };
+
+        window.refreshWisdom = () => {
+            updateUI();
+        };
+
+        window.showMoodTracker = () => {
+            // Simple mood tracker modal
+            const moodModal = `
+                <div class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+                    <div class="bg-white rounded-lg p-6 max-w-md w-full">
+                        <h3 class="text-xl font-bold mb-4">How are you feeling today?</h3>
+                        <div class="grid grid-cols-5 gap-2 mb-4">
+                            ${['😢', '😕', '😐', '🙂', '😊'].map((emoji, index) => `
+                                <button onclick="addMoodEntry(${index + 1}, '')" class="text-3xl p-2 rounded hover:bg-gray-100">
+                                    ${emoji}
+                                </button>
+                            `).join('')}
+                        </div>
+                        <textarea id="moodNotes" placeholder="Any notes about your mood..." class="w-full p-2 border rounded mb-4"></textarea>
+                        <div class="flex justify-end space-x-2">
+                            <button onclick="closeMoodTracker()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                            <button onclick="saveMoodEntry()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">Save</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', moodModal);
+        };
+
+        window.closeMoodTracker = () => {
+            const modal = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-75');
+            if (modal) modal.remove();
+        };
+
+        window.saveMoodEntry = () => {
+            const notes = document.getElementById('moodNotes')?.value || '';
+            addMoodEntry(3, notes); // Default to neutral mood
+            closeMoodTracker();
+        };
+
+        // Update journal unlock status
+        const updateJournalStatus = () => {
+            const completedCount = state.spells.filter(spell => spell.completed).length;
+            if (completedCount >= 3 && !state.journalUnlocked) {
+                state.journalUnlocked = true;
+            }
+            if (completedCount === 0 && state.hasEarnedXPToday) {
+                state.hasEarnedXPToday = false;
+            }
+        };
+
+        // Main UI update function
+        const updateUI = () => {
+            updateJournalStatus();
+            
+            // Apply theme and dark mode
+            const theme = getCurrentTheme();
+            const body = document.body;
+            body.className = `min-h-screen bg-gradient-to-br ${theme.bg} p-4 ${state.darkMode ? 'dark' : ''}`;
+            
+            document.getElementById('xpBar').innerHTML = renderXPBar();
+            document.getElementById('tabNavigation').innerHTML = renderTabNavigation();
+            
+            // Render appropriate view
+            let content;
+            switch (state.activeTab) {
+                case 'spellbook':
+                    content = renderSpellbookView();
+                    break;
+                case 'log':
+                    content = renderLogView();
+                    break;
+                case 'analytics':
+                    content = renderAnalyticsView();
+                    break;
+                case 'settings':
+                    content = renderSettingsView();
+                    break;
+                default:
+                    content = renderSpellbookView();
+            }
+            
+            document.getElementById('content').innerHTML = content;
+            
+            // Re-initialize Lucide icons after DOM updates
+            lucide.createIcons();
+        };
+
+        // Initialize the app
+        updateUI();
+        
+        // Add welcome modal to body
+        document.body.insertAdjacentHTML('beforeend', renderWelcomeModal());
+        lucide.createIcons();
+
+        // Add to global functions:
+        window.confirmClearData = () => {
+            if (confirm('Are you sure you want to clear ALL Focuscraft data? This cannot be undone.')) {
+                localStorage.removeItem('focuscraft-state');
+                location.reload();
+            }
+        };
+    </script>
+</body>
+</html> 
