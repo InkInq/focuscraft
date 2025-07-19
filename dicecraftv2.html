@@ -1,0 +1,776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Character Design Dice</title>
+  <style>
+    body {
+      background: #18181b;
+      color: #fff;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .title {
+      font-size: 2.5rem;
+      font-weight: bold;
+      background: linear-gradient(90deg, #a78bfa, #f472b6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-fill-color: transparent;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: #a3a3a3;
+      margin-bottom: 0.5rem;
+    }
+    .desc {
+      color: #71717a;
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      justify-content: center;
+      margin-top: 1rem;
+    }
+    button {
+      border: none;
+      outline: none;
+      cursor: pointer;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      padding: 0.5rem 1.2rem;
+      transition: background 0.2s, color 0.2s, opacity 0.2s, transform 0.2s;
+    }
+    .btn-purple { background: #9333ea; color: #fff; }
+    .btn-purple:hover { background: #7c3aed; }
+    .btn-gray { background: #52525b; color: #fff; }
+    .btn-gray:hover { background: #3f3f46; }
+    .btn-green { background: #16a34a; color: #fff; }
+    .btn-green:hover { background: #15803d; }
+    .btn-blue { background: #2563eb; color: #fff; }
+    .btn-blue:hover { background: #1d4ed8; }
+    .category {
+      background: #27272a;
+      border-radius: 1rem;
+      margin-bottom: 2rem;
+      overflow: hidden;
+      box-shadow: 0 2px 8px #0002;
+    }
+    .category-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.5rem;
+      cursor: pointer;
+      background: #27272a;
+      transition: background 0.2s;
+    }
+    .category-header:hover {
+      background: #32323a;
+    }
+    .category-title {
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+    .category-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .category-content {
+      transition: max-height 0.3s, opacity 0.3s;
+      overflow: hidden;
+      padding: 0 1.5rem 1.5rem 1.5rem;
+    }
+    .dice-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .dice-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1rem;
+      background: #1e293b;
+      border-radius: 0.75rem;
+      transition: background 0.2s, transform 0.2s;
+      min-height: 120px;
+    }
+    .dice-btn:hover {
+      background: #334155;
+      transform: scale(1.04);
+    }
+    .dice-roll-btn {
+      width: 64px;
+      height: 64px;
+      border-radius: 0.75rem;
+      color: #fff;
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+      transition: background 0.2s, transform 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      text-shadow: 
+        -1px -1px 0 #000,
+        -1px 1px 0 #000,
+        1px -1px 0 #000,
+        1px 1px 0 #000;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .dice-roll-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: radial-gradient(circle at 20% 20%, rgba(255,255,255,0.1) 2px, transparent 2px),
+                        radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 2px, transparent 2px),
+                        radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1) 2px, transparent 2px),
+                        radial-gradient(circle at 20% 80%, rgba(255,255,255,0.1) 2px, transparent 2px),
+                        radial-gradient(circle at 80% 80%, rgba(255,255,255,0.1) 2px, transparent 2px);
+      background-size: 100% 100%;
+      pointer-events: none;
+    }
+    
+    @keyframes diceRoll {
+      0% {
+        transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg) scale(1);
+      }
+      25% {
+        transform: rotateX(360deg) rotateY(180deg) rotateZ(90deg) scale(0.9);
+      }
+      50% {
+        transform: rotateX(720deg) rotateY(360deg) rotateZ(180deg) scale(0.8);
+      }
+      75% {
+        transform: rotateX(1080deg) rotateY(540deg) rotateZ(270deg) scale(0.9);
+      }
+      100% {
+        transform: rotateX(1440deg) rotateY(720deg) rotateZ(360deg) scale(1);
+      }
+    }
+    
+    .dice-rolling {
+      animation: diceRoll 0.8s ease-out;
+      transform-style: preserve-3d;
+    }
+    /* Fix for any dice that might have a white background (none in current set, but for safety) */
+    .bg-white, .bg-gray-100, .bg-gray-200, .bg-gray-300, .bg-gray-50 {
+      background: #334155 !important;
+    }
+    /* Optionally, ensure all dice have a colored background (if any are missing, default to blue) */
+    .dice-roll-btn:not([class*='bg-']) {
+      background: #2563eb;
+    }
+    .dice-label {
+      font-size: 0.95rem;
+      color: #d4d4d8;
+      margin-bottom: 0.3rem;
+      text-align: center;
+    }
+    .dice-result {
+      margin-top: 0.5rem;
+      padding: 0.4rem 0.7rem;
+      background: #334155;
+      border-radius: 0.5rem;
+      color: #fff;
+      font-size: 1rem;
+      min-height: 2rem;
+      text-align: center;
+    }
+    .character-summary {
+      margin-top: 2.5rem;
+      background: #27272a;
+      border-radius: 1rem;
+      padding: 2rem;
+    }
+    .summary-title {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1rem;
+    }
+    .summary-item {
+      display: flex;
+      justify-content: space-between;
+      background: #334155;
+      border-radius: 0.5rem;
+      padding: 0.7rem 1rem;
+      font-size: 1rem;
+      color: #fff;
+    }
+    /* Dice color classes */
+    .bg-purple-500 { background: #a78bfa !important; }
+    .bg-blue-500 { background: #3b82f6 !important; }
+    .bg-green-500 { background: #22c55e !important; }
+    .bg-yellow-500 { background: #eab308 !important; }
+    .bg-red-500 { background: #ef4444 !important; }
+    .bg-indigo-500 { background: #6366f1 !important; }
+    .bg-pink-500 { background: #ec4899 !important; }
+    .bg-emerald-600 { background: #059669 !important; }
+    .bg-purple-600 { background: #7c3aed !important; }
+    .bg-cyan-600 { background: #0891b2 !important; }
+    .bg-red-600 { background: #dc2626 !important; }
+    .bg-violet-600 { background: #8b5cf6 !important; }
+    .bg-blue-600 { background: #2563eb !important; }
+    .bg-stone-500 { background: #78716c !important; }
+    .bg-amber-600 { background: #d97706 !important; }
+    .bg-orange-600 { background: #ea580c !important; }
+    .bg-violet-500 { background: #8b5cf6 !important; }
+    .bg-teal-500 { background: #14b8a6 !important; }
+    .bg-cyan-500 { background: #06b6d4 !important; }
+    .bg-green-600 { background: #16a34a !important; }
+    .bg-lime-500 { background: #84cc16 !important; }
+    .bg-slate-500 { background: #64748b !important; }
+    .bg-gray-600 { background: #52525b !important; }
+    .bg-zinc-600 { background: #52525b !important; }
+    .bg-pink-500 { background: #ec4899 !important; }
+    .bg-green-400 { background: #4ade80 !important; }
+    .bg-red-400 { background: #f87171 !important; }
+    .bg-red-700 { background: #b91c1c !important; }
+    .bg-violet-700 { background: #6d28d9 !important; }
+    .bg-slate-600 { background: #475569 !important; }
+    .bg-yellow-600 { background: #ca8a04 !important; }
+    .bg-emerald-700 { background: #047857 !important; }
+    .bg-cyan-700 { background: #155e75 !important; }
+    .bg-blue-700 { background: #1d4ed8 !important; }
+    .bg-teal-600 { background: #0d9488 !important; }
+    .hidden { display: none; }
+    @media (max-width: 600px) {
+      .dice-grid { grid-template-columns: 1fr; }
+      .summary-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="title">Character Design Dice</div>
+      <div class="subtitle">Roll the dice to generate unique character concepts</div>
+      <div class="desc" id="dice-count"></div>
+      <div class="actions">
+        <button class="btn-purple" id="roll-all">⚡ Roll All Dice</button>
+        <button class="btn-gray" id="clear-results">Clear Results</button>
+        <button class="btn-green hidden" id="copy-character">Copy Character</button>
+        <button class="btn-blue" id="toggle-expand">Collapse All</button>
+      </div>
+    </header>
+    <div id="categories"></div>
+    <div class="character-summary hidden" id="character-summary">
+      <div class="summary-title">✨ Your Character Concept</div>
+      <div class="summary-grid" id="summary-grid"></div>
+    </div>
+  </div>
+  <script>
+    // Emoji icons for categories
+    const icons = {
+      traditional: '🎲',
+      species: '🧬',
+      class: '⚔️',
+      personality: '🧑',
+      physical: '👁️',
+      aesthetic: '🎨',
+      quirks: '✨',
+      strengths: '🛡️',
+      weaknesses: '💔',
+      magical: '🔥',
+      background: '📍',
+      relationships: '👥',
+      emotions: '❤️',
+      voice: '📜',
+      possessions: '🪄',
+    };
+
+    // Dice categories and data (from your original code, minus icons)
+    const diceCategories = {
+      traditional: {
+        name: "Traditional Dice",
+        dice: {
+          d4: { sides: 4, color: "bg-purple-500" },
+          d6: { sides: 6, color: "bg-blue-500" },
+          d8: { sides: 8, color: "bg-green-500" },
+          d10: { sides: 10, color: "bg-yellow-500" },
+          d12: { sides: 12, color: "bg-red-500" },
+          d20: { sides: 20, color: "bg-indigo-500" },
+          d100: { sides: 100, color: "bg-pink-500" }
+        }
+      },
+      species: {
+        name: "Species & Race",
+        dice: {
+          fantasy: {
+            sides: ["Human", "Elf", "Dwarf", "Halfling", "Orc", "Tiefling", "Dragonborn", "Gnome", "Half-Elf", "Goblin", "Centaur", "Minotaur", "Satyr", "Triton", "Aarakocra"],
+            color: "bg-emerald-600"
+          },
+          exotic: {
+            sides: ["Angel", "Demon", "Vampire", "Werewolf", "Fae", "Elemental", "Construct", "Undead", "Shapeshifter", "Celestial", "Phoenix", "Sphinx", "Djinn", "Banshee", "Wraith"],
+            color: "bg-purple-600"
+          },
+          modern: {
+            sides: ["Cyborg", "Mutant", "AI", "Clone", "Hybrid", "Enhanced Human", "Alien", "Time Traveler", "Dimension Walker", "Psychic", "Android", "Chimera", "Synthetic", "Quantum Being", "Digital Entity"],
+            color: "bg-cyan-600"
+          }
+        }
+      },
+      class: {
+        name: "Class & Role",
+        dice: {
+          combat: {
+            sides: ["Warrior", "Rogue", "Archer", "Berserker", "Paladin", "Assassin", "Guardian", "Duelist", "Knight", "Mercenary", "Gladiator", "Ranger", "Warlord", "Champion", "Executioner"],
+            color: "bg-red-600"
+          },
+          magic: {
+            sides: ["Wizard", "Sorcerer", "Warlock", "Cleric", "Druid", "Necromancer", "Enchanter", "Alchemist", "Witch", "Shaman", "Summoner", "Illusionist", "Ritualist", "Spellweaver", "Mystic"],
+            color: "bg-violet-600"
+          },
+          support: {
+            sides: ["Healer", "Bard", "Scholar", "Merchant", "Diplomat", "Scout", "Engineer", "Artificer", "Librarian", "Mentor", "Mediator", "Sage", "Guide", "Counselor", "Advocate"],
+            color: "bg-blue-600"
+          }
+        }
+      },
+      personality: {
+        name: "Personality",
+        dice: {
+          core: {
+            sides: ["Introverted", "Extroverted", "Ambivert", "Antisocial", "Gregarious", "Selective", "Reserved", "Outgoing", "Contemplative", "Expressive"],
+            color: "bg-rose-800"
+          },
+          energy: {
+            sides: ["High-energy", "Calm", "Chaotic", "Methodical", "Spontaneous", "Deliberate", "Energetic", "Serene", "Unpredictable", "Systematic"],
+            color: "bg-orange-600"
+          },
+          moral: {
+            sides: ["Lawful Good", "Neutral Good", "Chaotic Good", "Lawful Neutral", "True Neutral", "Chaotic Neutral", "Lawful Evil", "Neutral Evil", "Chaotic Evil", "Rebel"],
+            color: "bg-amber-600"
+          }
+        }
+      },
+      physical: {
+        name: "Physical Traits",
+        dice: {
+          build: {
+            sides: ["Petite", "Average", "Tall", "Muscular", "Slender", "Stocky", "Lanky", "Curvy", "Athletic", "Broad", "Compact", "Imposing", "Graceful", "Robust", "Elegant"],
+            color: "bg-gray-600"
+          },
+          features: {
+            sides: ["Sharp features", "Soft features", "Angular jaw", "Round face", "High cheekbones", "Dimples", "Freckles", "Beauty mark", "Asymmetrical", "Classical", "Exotic", "Delicate", "Strong", "Refined", "Distinctive"],
+            color: "bg-amber-600"
+          },
+          distinctive: {
+            sides: ["Heterochromia", "Unusual scars", "Tattoos", "Piercings", "Birthmark", "Missing limb", "Cybernetic parts", "Glowing eyes", "Pointed ears", "Fangs", "Scales", "Horns", "Tail", "Wings", "Third eye"],
+            color: "bg-orange-600"
+          }
+        }
+      },
+      aesthetic: {
+        name: "Aesthetic",
+        dice: {
+          style: {
+            sides: ["Gothic", "Cottagecore", "Cyberpunk", "Steampunk", "Minimalist", "Maximalist", "Vintage", "Futuristic", "Bohemian", "Academia", "Dark Academia", "Light Academia", "Retro", "Avant-garde", "Classic"],
+            color: "bg-violet-500"
+          },
+          colors: {
+            sides: ["Monochrome", "Earth tones", "Pastels", "Neon", "Jewel tones", "Muted", "Bold", "Rainbow", "Metallic", "Natural", "Monochromatic", "Warm", "Cool", "Neutral", "Vibrant"],
+            color: "bg-teal-500"
+          },
+          fashion: {
+            sides: ["Formal", "Casual", "Alternative", "Vintage", "Streetwear", "Bohemian", "Punk", "Elegant", "Practical", "Eccentric", "Sophisticated", "Relaxed", "Edgy", "Refined", "Bold"],
+            color: "bg-cyan-500"
+          }
+        }
+      },
+      quirks: {
+        name: "Quirks & Habits",
+        dice: {
+          physical: {
+            sides: ["Always fidgeting", "Extremely graceful", "Clumsy", "Never sits still", "Perfect posture", "Slouches constantly", "Talks with hands", "Avoids eye contact", "Taps foot", "Cracks knuckles", "Twirls hair", "Bites nails", "Stretches often", "Sways when standing", "Tilts head when thinking"],
+            color: "bg-emerald-800"
+          },
+          social: {
+            sides: ["Laughs at own jokes", "Speaks in whispers", "Very loud voice", "Uses unusual words", "Always interrupting", "Long pauses", "Rhymes when nervous", "Quotes books/movies", "Makes sound effects", "Uses gestures", "Repeats phrases", "Asks for clarification", "Finishes others' sentences", "Speaks in riddles", "Uses old-fashioned language"],
+            color: "bg-lime-500"
+          },
+          habits: {
+            sides: ["Collects odd things", "Always eating", "Never removes gloves", "Draws on everything", "Counts everything", "Always humming", "Taps rhythms", "Organized to excess", "Chews on pens", "Takes notes constantly", "Arranges things by color", "Always has snacks", "Checks things multiple times", "Has lucky items", "Follows strict routines"],
+            color: "bg-green-600"
+          }
+        }
+      },
+      strengths: {
+        name: "Strengths & Talents",
+        dice: {
+          mental: {
+            sides: ["Photographic memory", "Quick learner", "Strategic mind", "Creative genius", "Empathetic", "Analytical", "Intuitive", "Wise", "Focused", "Adaptable", "Problem solver", "Innovative", "Perceptive", "Logical", "Imaginative"],
+            color: "bg-blue-500"
+          },
+          physical: {
+            sides: ["Super strength", "Lightning fast", "Incredible stamina", "Perfect balance", "Enhanced senses", "Flexible", "Tough", "Graceful", "Precise", "Resilient", "Agile", "Enduring", "Coordinated", "Swift", "Sturdy"],
+            color: "bg-green-500"
+          },
+          social: {
+            sides: ["Natural leader", "Charismatic", "Persuasive", "Trustworthy", "Inspiring", "Diplomatic", "Loyal", "Protective", "Generous", "Patient", "Encouraging", "Understanding", "Supportive", "Motivational", "Compassionate"],
+            color: "bg-yellow-600"
+          }
+        }
+      },
+      weaknesses: {
+        name: "Weaknesses & Flaws",
+        dice: {
+          mental: {
+            sides: ["Forgetful", "Overthinks", "Impulsive", "Stubborn", "Paranoid", "Perfectionist", "Indecisive", "Pessimistic", "Obsessive", "Naive", "Distracted", "Anxious", "Rash", "Rigid", "Suspicious"],
+            color: "bg-red-500"
+          },
+          physical: {
+            sides: ["Weak constitution", "Poor eyesight", "Chronic pain", "Allergies", "Insomnia", "Clumsy", "Slow reflexes", "Fragile bones", "Low stamina", "Sensitive to light", "Poor hearing", "Asthma", "Joint problems", "Motion sickness", "Heat sensitive"],
+            color: "bg-red-600"
+          },
+          social: {
+            sides: ["Shy", "Arrogant", "Jealous", "Dishonest", "Hot-tempered", "Manipulative", "Selfish", "Cowardly", "Vindictive", "Gossipy", "Insecure", "Proud", "Envious", "Deceitful", "Aggressive"],
+            color: "bg-red-700"
+          }
+        }
+      },
+      magical: {
+        name: "Magical & Supernatural",
+        dice: {
+          element: {
+            sides: ["Fire", "Water", "Earth", "Air", "Lightning", "Ice", "Nature", "Shadow", "Light", "Void", "Metal", "Crystal", "Storm", "Frost", "Thunder"],
+            color: "bg-purple-500"
+          },
+          ability: {
+            sides: ["Telepathy", "Telekinesis", "Healing touch", "Precognition", "Illusions", "Shape-shifting", "Invisibility", "Time manipulation", "Dream walking", "Soul sight", "Mind reading", "Levitation", "Regeneration", "Future sight", "Reality warping"],
+            color: "bg-indigo-500"
+          },
+          curse: {
+            sides: ["Transform at full moon", "Can't lie", "Ages backwards", "Sees ghosts", "Unlucky", "Cursed object bound", "Memory leaks", "Emotions affect weather", "Can't touch iron", "Speaks to animals", "Turns to stone in sunlight", "Always tells truth", "Grows younger", "Sees past events", "Bad luck follows"],
+            color: "bg-violet-700"
+          }
+        }
+      },
+      background: {
+        name: "Background",
+        dice: {
+          origin: {
+            sides: ["Noble family", "Street orphan", "Merchant class", "Wilderness hermit", "Academic family", "Criminal background", "Religious order", "Artistic community", "Military family", "Nomadic tribe", "Royal bloodline", "Foundling", "Trade guild", "Monastic order", "Theater troupe"],
+            color: "bg-slate-500"
+          },
+          profession: {
+            sides: ["Scholar", "Artisan", "Entertainer", "Guard", "Merchant", "Healer", "Mystic", "Researcher", "Explorer", "Teacher", "Scribe", "Craftsman", "Performer", "Sentinel", "Trader"],
+            color: "bg-gray-600"
+          },
+          secret: {
+            sides: ["Hidden magical ability", "False identity", "Lost memory", "Secret love", "Dark past", "Hidden wealth", "Forbidden knowledge", "Royal bloodline", "Cursed item", "Prophetic dreams", "Alien heritage", "Stolen identity", "Amnesia", "Forbidden romance", "Criminal history"],
+            color: "bg-zinc-600"
+          }
+        }
+      },
+      relationships: {
+        name: "Relationships",
+        dice: {
+          family: {
+            sides: ["Large loving family", "Estranged siblings", "Single parent", "Adopted", "Orphaned young", "Secret twin", "Rival cousin", "Protective grandmother", "Absent father", "Overbearing mother", "Extended clan", "Disowned", "Foster care", "Hidden sibling", "Competitive relative"],
+            color: "bg-pink-500"
+          },
+          allies: {
+            sides: ["Childhood friend", "Mentor figure", "Loyal companion", "Former enemy", "Mysterious benefactor", "Animal companion", "Ghost advisor", "Rival turned ally", "Love interest", "Found family", "Trusted confidant", "Wise teacher", "Faithful partner", "Reformed foe", "Generous patron"],
+            color: "bg-green-400"
+          },
+          enemies: {
+            sides: ["Betrayed friend", "Evil twin", "Corrupt official", "Jealous rival", "Dark cult", "Corporate overlord", "Vengeful ex", "Monster hunter", "Time traveler", "Alternate self", "Former ally", "Doppelganger", "Dishonest authority", "Envious competitor", "Malevolent group"],
+            color: "bg-red-400"
+          }
+        }
+      },
+      emotions: {
+        name: "Loves & Fears",
+        dice: {
+          loves: {
+            sides: ["Ancient books", "Stormy weather", "Small animals", "Shiny objects", "Spicy food", "Quiet moments", "Loud music", "Puzzles", "Heights", "Underground spaces", "Old maps", "Thunderstorms", "Puppies", "Gemstones", "Hot peppers"],
+            color: "bg-red-400"
+          },
+          fears: {
+            sides: ["Being alone", "Crowds", "Deep water", "Heights", "Small spaces", "Darkness", "Being judged", "Loss of control", "Abandonment", "Public speaking", "Isolation", "Large groups", "Ocean depths", "High places", "Confined areas"],
+            color: "bg-red-700"
+          },
+          motivation: {
+            sides: ["Prove themselves", "Protect others", "Gain knowledge", "Find belonging", "Seek revenge", "Discover truth", "Create beauty", "Gain power", "Find peace", "Make amends", "Achieve greatness", "Defend the weak", "Learn secrets", "Find home", "Get justice"],
+            color: "bg-pink-700"
+          }
+        }
+      },
+      voice: {
+        name: "Voice & Speech",
+        dice: {
+          tone: {
+            sides: ["Deep and gravelly", "High and melodic", "Raspy whisper", "Booming loud", "Soft spoken", "Monotone", "Sing-song", "Crackling old", "Smooth velvet", "Sharp and crisp", "Rich baritone", "Sweet soprano", "Husky whisper", "Thunderous roar", "Gentle murmur"],
+            color: "bg-teal-600"
+          },
+          accent: {
+            sides: ["Posh aristocrat", "Rural countryside", "Foreign mysterious", "Street smart", "Academic formal", "Pirate swagger", "Valley uptalk", "Southern drawl", "Clipped military", "Theatrical dramatic", "Refined noble", "Country bumpkin", "Exotic foreign", "Urban savvy", "Scholarly precise"],
+            color: "bg-cyan-700"
+          },
+          pattern: {
+            sides: ["Speaks in riddles", "Always rhyming", "Uses big words", "Very literal", "Sarcastic tone", "Asks many questions", "Tells stories", "Quotes poetry", "Technical jargon", "Ancient phrases", "Cryptic messages", "Poetic verse", "Complex vocabulary", "Direct statements", "Witty remarks"],
+            color: "bg-blue-700"
+          }
+        }
+      },
+      possessions: {
+        name: "Items & Possessions",
+        dice: {
+          weapon: {
+            sides: ["Ancient sword", "Enchanted bow", "Crystal staff", "Cursed dagger", "Holy symbol", "Mechanical gauntlet", "Poison needle", "Runic hammer", "Shadow blade", "Living weapon", "Legendary blade", "Magical crossbow", "Elemental staff", "Cursed blade", "Sacred relic"],
+            color: "bg-slate-600"
+          },
+          treasure: {
+            sides: ["Family heirloom", "Mysterious map", "Rare book", "Magical gem", "Love letter", "Pocket watch", "Music box", "Crystal ball", "Cursed mirror", "Secret key", "Ancestral ring", "Hidden chart", "Ancient tome", "Enchanted stone", "Romantic note"],
+            color: "bg-yellow-600"
+          },
+          companion: {
+            sides: ["Talking raven", "Loyal dog", "Magical cat", "Tiny dragon", "Spirit guide", "Clockwork pet", "Plant familiar", "Crystal entity", "Shadow creature", "Ancestral ghost", "Wise crow", "Faithful hound", "Enchanted feline", "Baby wyrm", "Ethereal guide"],
+            color: "bg-emerald-700"
+          }
+        }
+      }
+    };
+
+    // --- State ---
+    let results = {};
+    let expandedSections = {};
+    for (const key in diceCategories) expandedSections[key] = true;
+
+    // --- DOM Elements ---
+    const categoriesDiv = document.getElementById('categories');
+    const summaryDiv = document.getElementById('character-summary');
+    const summaryGrid = document.getElementById('summary-grid');
+    const diceCountDiv = document.getElementById('dice-count');
+    const rollAllBtn = document.getElementById('roll-all');
+    const clearBtn = document.getElementById('clear-results');
+    const copyBtn = document.getElementById('copy-character');
+    const toggleExpandBtn = document.getElementById('toggle-expand');
+
+    // --- Utility Functions ---
+    function renderCategories() {
+      categoriesDiv.innerHTML = '';
+      Object.entries(diceCategories).forEach(([catKey, cat]) => {
+        // Category header
+        const catDiv = document.createElement('div');
+        catDiv.className = 'category';
+        // Header
+        const header = document.createElement('div');
+        header.className = 'category-header';
+        header.onclick = () => toggleSection(catKey);
+        // Title
+        const title = document.createElement('div');
+        title.className = 'category-title';
+        title.innerHTML = `<span>${icons[catKey] || ''}</span> <span>${cat.name}</span>`;
+        // Actions
+        const actions = document.createElement('div');
+        actions.className = 'category-actions';
+        // Roll all in category
+        const rollAll = document.createElement('button');
+        rollAll.className = 'btn-purple';
+        rollAll.textContent = 'Roll All';
+        rollAll.onclick = e => { e.stopPropagation(); rollAllInCategory(catKey); };
+        actions.appendChild(rollAll);
+        // Expand/collapse icon
+        const expandIcon = document.createElement('span');
+        expandIcon.textContent = expandedSections[catKey] ? '▲' : '▼';
+        expandIcon.style.fontSize = '1.2rem';
+        actions.appendChild(expandIcon);
+        // Assemble header
+        header.appendChild(title);
+        header.appendChild(actions);
+        catDiv.appendChild(header);
+        // Content
+        const content = document.createElement('div');
+        content.className = 'category-content';
+        content.style.maxHeight = expandedSections[catKey] ? '2000px' : '0';
+        content.style.opacity = expandedSections[catKey] ? '1' : '0';
+        if (expandedSections[catKey]) {
+          const grid = document.createElement('div');
+          grid.className = 'dice-grid';
+          Object.entries(cat.dice).forEach(([diceKey, dice]) => {
+            grid.appendChild(renderDiceButton(catKey, diceKey, dice));
+          });
+          content.appendChild(grid);
+        }
+        catDiv.appendChild(content);
+        categoriesDiv.appendChild(catDiv);
+      });
+    }
+
+    function renderDiceButton(category, diceKey, dice) {
+      const rollKey = `${category}-${diceKey}`;
+      const btnDiv = document.createElement('div');
+      btnDiv.className = 'dice-btn';
+      // Roll button
+      const rollBtn = document.createElement('button');
+      rollBtn.className = `dice-roll-btn ${dice.color}`;
+      rollBtn.setAttribute('data-category', category);
+      rollBtn.setAttribute('data-dice', diceKey);
+      rollBtn.textContent = typeof dice.sides === 'number' ? `d${dice.sides}` : diceKey.toUpperCase();
+      rollBtn.onclick = () => rollDice(category, diceKey);
+      btnDiv.appendChild(rollBtn);
+      // Label
+      const label = document.createElement('div');
+      label.className = 'dice-label';
+      label.textContent = diceKey.charAt(0).toUpperCase() + diceKey.slice(1);
+      btnDiv.appendChild(label);
+      // Result
+      const resultDiv = document.createElement('div');
+      resultDiv.className = 'dice-result';
+      resultDiv.textContent = results[rollKey] || '';
+      btnDiv.appendChild(resultDiv);
+      return btnDiv;
+    }
+
+    function renderSummary() {
+      if (Object.keys(results).length === 0) {
+        summaryDiv.classList.add('hidden');
+        copyBtn.classList.add('hidden');
+        return;
+      }
+      summaryDiv.classList.remove('hidden');
+      copyBtn.classList.remove('hidden');
+      summaryGrid.innerHTML = '';
+      Object.entries(results).forEach(([key, value]) => {
+        const [category, diceKey] = key.split('-');
+        const categoryName = diceCategories[category].name;
+        const diceName = diceKey.charAt(0).toUpperCase() + diceKey.slice(1);
+        const item = document.createElement('div');
+        item.className = 'summary-item';
+        item.innerHTML = `<span>${categoryName} - ${diceName}:</span><span>${value}</span>`;
+        summaryGrid.appendChild(item);
+      });
+    }
+
+    function updateDiceCount() {
+      const catCount = Object.keys(diceCategories).length;
+      const diceCount = Object.values(diceCategories).reduce((total, cat) => total + Object.keys(cat.dice).length, 0);
+      diceCountDiv.textContent = `${catCount} categories • ${diceCount} dice total`;
+    }
+
+    // --- Logic ---
+    function rollDice(category, diceKey) {
+      const dice = diceCategories[category].dice[diceKey];
+      const rollKey = `${category}-${diceKey}`;
+      
+      // Find the dice button and add rolling animation
+      const diceButton = document.querySelector(`[data-category="${category}"][data-dice="${diceKey}"]`);
+      if (diceButton) {
+        diceButton.classList.add('dice-rolling');
+        // Remove animation class after animation completes
+        setTimeout(() => {
+          diceButton.classList.remove('dice-rolling');
+        }, 800);
+      }
+      
+      let result;
+      if (typeof dice.sides === 'number') {
+        result = Math.floor(Math.random() * dice.sides) + 1;
+      } else {
+        result = dice.sides[Math.floor(Math.random() * dice.sides.length)];
+      }
+      
+      // Delay the result update to match the animation
+      setTimeout(() => {
+        results[rollKey] = result;
+        renderCategories();
+        renderSummary();
+      }, 400); // Show result halfway through the animation
+    }
+
+    function rollAllInCategory(categoryKey) {
+      Object.keys(diceCategories[categoryKey].dice).forEach(diceKey => {
+        rollDice(categoryKey, diceKey);
+      });
+    }
+
+    function rollAllDice() {
+      Object.keys(diceCategories).forEach(category => {
+        Object.keys(diceCategories[category].dice).forEach(diceKey => {
+          rollDice(category, diceKey);
+        });
+      });
+    }
+
+    function clearResults() {
+      results = {};
+      renderCategories();
+      renderSummary();
+    }
+
+    function exportCharacter() {
+      const character = Object.entries(results).map(([key, value]) => {
+        const [category, diceKey] = key.split('-');
+        const categoryName = diceCategories[category].name;
+        const diceName = diceKey.charAt(0).toUpperCase() + diceKey.slice(1);
+        return `${categoryName} - ${diceName}: ${value}`;
+      }).join('\n');
+      navigator.clipboard.writeText(character);
+      alert('Character copied to clipboard!');
+    }
+
+    function toggleSection(sectionKey) {
+      expandedSections[sectionKey] = !expandedSections[sectionKey];
+      renderCategories();
+    }
+
+    function toggleAllSections() {
+      const allExpanded = Object.values(expandedSections).every(Boolean);
+      Object.keys(expandedSections).forEach(key => {
+        expandedSections[key] = !allExpanded;
+      });
+      renderCategories();
+      toggleExpandBtn.textContent = allExpanded ? 'Expand All' : 'Collapse All';
+    }
+
+    // --- Event Listeners ---
+    rollAllBtn.onclick = rollAllDice;
+    clearBtn.onclick = clearResults;
+    copyBtn.onclick = exportCharacter;
+    toggleExpandBtn.onclick = toggleAllSections;
+
+    // --- Initial Render ---
+    updateDiceCount();
+    renderCategories();
+    renderSummary();
+  </script>
+</body>
+</html> 
